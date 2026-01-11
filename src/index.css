@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  /* Writing-friendly typography classes */
+  .prose-writing {
+    @apply text-gray-800 leading-relaxed;
+    font-size: 1.1rem;
+    line-height: 1.8;
+  }
+  
+  .prose-writing h1 {
+    @apply text-3xl font-bold mt-8 mb-4 text-gray-900;
+  }
+  
+  .prose-writing h2 {
+    @apply text-2xl font-semibold mt-6 mb-3 text-gray-900;
+  }
+  
+  .prose-writing p {
+    @apply mb-4;
+  }
+}
