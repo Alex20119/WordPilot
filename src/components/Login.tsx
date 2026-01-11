@@ -1,6 +1,5 @@
 import { useState, FormEvent } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { AuthError } from '@supabase/supabase-js'
 
 export default function Login() {
   const [email, setEmail] = useState('')
