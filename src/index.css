@@ -28,4 +28,79 @@
   .prose-writing p {
     @apply mb-4;
   }
+
+  /* Tiptap editor styles */
+  .ProseMirror {
+    @apply outline-none;
+  }
+
+  .ProseMirror p {
+    @apply mb-2;
+  }
+
+  .ProseMirror p.is-editor-empty:first-child::before {
+    @apply text-gray-400;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .ProseMirror h1 {
+    @apply text-2xl font-bold mt-4 mb-2;
+  }
+
+  .ProseMirror h2 {
+    @apply text-xl font-semibold mt-3 mb-2;
+  }
+
+  .ProseMirror h3 {
+    @apply text-lg font-semibold mt-2 mb-2;
+  }
+
+  .ProseMirror ul, .ProseMirror ol {
+    @apply pl-6 my-2;
+  }
+
+  .ProseMirror ul {
+    @apply list-disc;
+  }
+
+  .ProseMirror ol {
+    @apply list-decimal;
+  }
+
+  .ProseMirror li {
+    @apply mb-1;
+  }
+
+  .ProseMirror strong {
+    @apply font-semibold;
+  }
+
+  .ProseMirror em {
+    @apply italic;
+  }
+
+  .ProseMirror code {
+    @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;
+  }
+
+  .ProseMirror pre {
+    @apply bg-gray-100 p-4 rounded my-2 overflow-x-auto;
+  }
+
+  .ProseMirror blockquote {
+    @apply border-l-4 border-gray-300 pl-4 italic my-2;
+  }
+
+  /* Hide scrollbar but keep scrolling functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
 }

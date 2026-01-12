@@ -39,3 +39,33 @@ export interface SandwichUpdate {
   writing_status?: WritingStatus
   personal_notes?: string | null
 }
+
+// Book sections types
+export interface BookSection {
+  id: string
+  user_id: string
+  title: string
+  content: string
+  parent_id: string | null
+  order_number: number
+  word_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface BookSectionInsert {
+  user_id: string
+  title: string
+  content?: string
+  parent_id?: string | null
+  order_number: number
+  word_count?: number
+}
+
+export interface BookSectionUpdate {
+  title?: string
+  content?: string
+  parent_id?: string | null
+  order_number?: number
+  word_count?: number
+}
