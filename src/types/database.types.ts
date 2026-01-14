@@ -40,10 +40,32 @@ export interface SandwichUpdate {
   personal_notes?: string | null
 }
 
+// Project types
+export interface Project {
+  id: string
+  user_id: string
+  title: string
+  description: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ProjectInsert {
+  user_id: string
+  title: string
+  description?: string | null
+}
+
+export interface ProjectUpdate {
+  title?: string
+  description?: string | null
+}
+
 // Book sections types
 export interface BookSection {
   id: string
   user_id: string
+  project_id: string
   title: string
   content: string
   parent_id: string | null
@@ -55,6 +77,7 @@ export interface BookSection {
 
 export interface BookSectionInsert {
   user_id: string
+  project_id: string
   title: string
   content?: string
   parent_id?: string | null

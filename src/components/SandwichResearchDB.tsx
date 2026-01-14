@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useParams, Link } from 'react-router-dom';
 import { getBookSections, getBookSectionById } from '@/lib/bookSections';
 import { addResearchWithAI, saveAIContent } from '@/lib/aiAssistant';
 import { BookSection } from '@/types/database.types';
@@ -12,6 +13,7 @@ interface SandwichResearchDBProps {
 
 const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
   const { user } = useAuth();
+  const { projectId } = useParams<{ projectId: string }>();
   const [sandwiches, setSandwiches] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -917,33 +919,45 @@ const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
             <option value="researched">Researched</option>
             <option value="pending">Pending Research</option>
           </select>
+
+          {!embedded && projectId && (
+            <Link
+              to={`/project/${projectId}/research-tool`}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              <span>AI Research Assistant</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          )}
           
           {!embedded && (
-            <button 
-              onClick={exportToCSV}
+          <button 
+            onClick={exportToCSV}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-            >
+          >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Export CSV
-            </button>
+            Export CSV
+          </button>
           )}
         </div>
 
         {!embedded && (
           <div className="bg-primary-100 rounded-lg p-4 mb-4">
-            <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center">
               <span className="text-primary-600 font-semibold">Research Progress:</span>
               <span className="text-primary-600">{researchedCount} / {totalCount} completed</span>
-            </div>
-            <div className="w-full bg-primary-200 rounded-full h-3 mt-2">
-              <div 
-                className="bg-primary-600 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${(researchedCount / totalCount) * 100}%` }}
-              />
-            </div>
           </div>
+            <div className="w-full bg-primary-200 rounded-full h-3 mt-2">
+            <div 
+                className="bg-primary-600 h-3 rounded-full transition-all duration-500"
+              style={{ width: `${(researchedCount / totalCount) * 100}%` }}
+            />
+          </div>
+        </div>
         )}
       </div>
 

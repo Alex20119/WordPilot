@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import ResearchDatabaseContent from '@/components/ResearchDatabaseContent'
 
 export default function ResearchDatabase() {
   const { user, signOut } = useAuth()
+  const { projectId } = useParams<{ projectId: string }>()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -11,17 +12,17 @@ export default function ResearchDatabase() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Link to="/" className="text-xl font-bold text-gray-900">
+              <Link to="/" className="text-xl font-bold text-gray-900 hover:text-gray-700">
                 Word Pilot
               </Link>
               <Link
-                to="/"
+                to={`/project/${projectId}`}
                 className="text-sm text-gray-600 hover:text-gray-900 flex items-center"
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Back to Home
+                Back to Project
               </Link>
             </div>
             <div className="flex items-center space-x-4">

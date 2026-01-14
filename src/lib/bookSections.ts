@@ -2,13 +2,13 @@ import { supabase } from './supabase'
 import { BookSection, BookSectionInsert, BookSectionUpdate } from '@/types/database.types'
 
 /**
- * Fetch all book sections for a user, ordered by order_number
+ * Fetch all book sections for a project, ordered by order_number
  */
-export async function getBookSections(userId: string) {
+export async function getBookSections(projectId: string) {
   const { data, error } = await supabase
     .from('book_sections')
     .select('*')
-    .eq('user_id', userId)
+    .eq('project_id', projectId)
     .order('order_number', { ascending: true })
 
   if (error) {

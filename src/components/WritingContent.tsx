@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useProject } from '@/contexts/ProjectContext'
 import {
   getBookSections,
   createBookSection,
@@ -9,6 +10,7 @@ import {
 } from '@/lib/bookSections'
 import { BookSection } from '@/types/database.types'
 import RichTextEditor from '@/components/RichTextEditor'
+import ExportModal from '@/components/ExportModal'
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
 
 interface WritingContentProps {
@@ -17,6 +19,7 @@ interface WritingContentProps {
 
 export default function WritingContent({ embedded = false }: WritingContentProps) {
   const { user } = useAuth()
+  const { projectId } = useProject()
   const [sections, setSections] = useState<BookSection[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
@@ -25,17 +28,18 @@ export default function WritingContent({ embedded = false }: WritingContentProps
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [showExportModal, setShowExportModal] = useState(false)
 
   useEffect(() => {
-    if (!user) return
+    if (!projectId) return
     loadSections()
-  }, [user])
+  }, [projectId])
 
   const loadSections = async () => {
-    if (!user) return
+    if (!projectId) return
     try {
       setLoading(true)
-      const data = await getBookSections(user.id)
+      const data = await getBookSections(projectId)
       setSections(data)
       // Start with all sections collapsed
       setExpandedSections(new Set())
@@ -47,13 +51,14 @@ export default function WritingContent({ embedded = false }: WritingContentProps
   }
 
   const handleAddSection = async () => {
-    if (!user) return
+    if (!user || !projectId) return
     try {
       const maxOrder = sections
         .filter((s) => !s.parent_id)
         .reduce((max, s) => Math.max(max, s.order_number), -1)
       const newSection = await createBookSection({
         user_id: user.id,
+        project_id: projectId,
         title: 'New Section',
         content: '',
         parent_id: null,
@@ -70,7 +75,7 @@ export default function WritingContent({ embedded = false }: WritingContentProps
   }
 
   const handleAddSubsection = async (parentId: string) => {
-    if (!user) return
+    if (!user || !projectId) return
     try {
       const parentSection = sections.find((s) => s.id === parentId)
       if (!parentSection) return
@@ -80,6 +85,7 @@ export default function WritingContent({ embedded = false }: WritingContentProps
 
       const newSection = await createBookSection({
         user_id: user.id,
+        project_id: projectId,
         title: 'New Subsection',
         content: '',
         parent_id: parentId,
@@ -315,37 +321,53 @@ export default function WritingContent({ embedded = false }: WritingContentProps
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Writing</h1>
               <p className="text-gray-600">Draft your book sections</p>
             </div>
-            <button
-              onClick={handleAddSection}
-              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
-            >
-              + Add Section
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Export
+              </button>
+              <button
+                onClick={handleAddSection}
+                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+              >
+                + Add Section
+              </button>
+            </div>
           </div>
         )}
 
         {embedded && (
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">Writing</h2>
-            {saving && (
-              <span className="text-sm text-gray-500 flex items-center">
-                <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Saving...
-              </span>
-            )}
-            <button
-              onClick={handleAddSection}
-              className="px-3 py-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors text-sm"
-            >
-              + Add Section
-            </button>
+            <div className="flex items-center gap-2">
+              {saving && (
+                <span className="text-sm text-gray-500 flex items-center">
+                  <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Saving...
+                </span>
+              )}
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm"
+              >
+                Export
+              </button>
+              <button
+                onClick={handleAddSection}
+                className="px-3 py-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors text-sm"
+              >
+                + Add Section
+              </button>
+            </div>
           </div>
         )}
 
@@ -388,6 +410,14 @@ export default function WritingContent({ embedded = false }: WritingContentProps
           </DragDropContext>
         )}
       </div>
+
+      {showExportModal && (
+        <ExportModal
+          sections={sections}
+          expandedSections={expandedSections}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
     </div>
   )
 }

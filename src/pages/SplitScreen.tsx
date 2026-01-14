@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import ResearchDatabaseContent from '@/components/ResearchDatabaseContent'
@@ -6,6 +6,7 @@ import WritingContent from '@/components/WritingContent'
 
 export default function SplitScreen() {
   const { user, signOut } = useAuth()
+  const { projectId } = useParams<{ projectId: string }>()
 
   useEffect(() => {
     // Prevent body scrolling when on split screen
@@ -21,17 +22,17 @@ export default function SplitScreen() {
         <div className="px-4 sm:px-6 lg:px-8 h-full">
           <div className="flex justify-between items-center h-full">
             <div className="flex items-center space-x-4">
-              <Link to="/" className="text-xl font-bold text-gray-900">
+              <Link to="/" className="text-xl font-bold text-gray-900 hover:text-gray-700">
                 Word Pilot
               </Link>
               <Link
-                to="/"
+                to={`/project/${projectId}`}
                 className="text-sm text-gray-600 hover:text-gray-900 flex items-center"
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Back to Home
+                Back to Project
               </Link>
               <span className="text-sm text-gray-500">Split-Screen Mode</span>
             </div>
