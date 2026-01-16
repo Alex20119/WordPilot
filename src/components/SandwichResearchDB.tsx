@@ -15,7 +15,6 @@ const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
   const { user } = useAuth();
   const { projectId } = useParams<{ projectId: string }>();
   const [sandwiches, setSandwiches] = useState<any[]>([]);
-  const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({});
   const [expandedSandwiches, setExpandedSandwiches] = useState<Record<string, boolean>>({});
@@ -729,9 +728,7 @@ const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
     ];
     
     setSandwiches(initialData);
-    const expanded: Record<string, boolean> = {};
-    Object.keys(chapters).forEach(ch => expanded[ch] = true);
-    setExpandedChapters(expanded);
+    // All chapters start collapsed (empty object means all false)
   }, []);
 
   const toggleChapter = (chapterNum: string) => {
@@ -868,10 +865,7 @@ const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
 
   const filteredSandwiches = sandwiches.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filter === 'all' || 
-                         (filter === 'researched' && s.researched) || 
-                         (filter === 'pending' && !s.researched);
-    return matchesSearch && matchesFilter;
+    return matchesSearch;
   });
 
   const groupedByChapter = filteredSandwiches.reduce((acc, sandwich) => {
@@ -879,9 +873,6 @@ const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
     acc[sandwich.chapter].push(sandwich);
     return acc;
   }, {});
-
-  const researchedCount = sandwiches.filter(s => s.researched).length;
-  const totalCount = sandwiches.length;
 
   return (
     <div 
@@ -903,22 +894,12 @@ const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
             </svg>
             <input
               type="text"
-              placeholder="Search sandwiches..."
+              placeholder="Search elements..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
             />
           </div>
-          
-          <select 
-            value={filter} 
-            onChange={(e) => setFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg"
-          >
-            <option value="all">All Sandwiches</option>
-            <option value="researched">Researched</option>
-            <option value="pending">Pending Research</option>
-          </select>
 
           {!embedded && projectId && (
             <Link
@@ -944,21 +925,6 @@ const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
           </button>
           )}
         </div>
-
-        {!embedded && (
-          <div className="bg-primary-100 rounded-lg p-4 mb-4">
-          <div className="flex justify-between items-center">
-              <span className="text-primary-600 font-semibold">Research Progress:</span>
-              <span className="text-primary-600">{researchedCount} / {totalCount} completed</span>
-          </div>
-            <div className="w-full bg-primary-200 rounded-full h-3 mt-2">
-            <div 
-                className="bg-primary-600 h-3 rounded-full transition-all duration-500"
-              style={{ width: `${(researchedCount / totalCount) * 100}%` }}
-            />
-          </div>
-        </div>
-        )}
       </div>
 
       <div className="space-y-4">

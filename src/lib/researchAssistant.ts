@@ -35,7 +35,8 @@ export function hasApiKey(): boolean {
  */
 export async function sendMessageToClaude(
   messages: ChatMessage[],
-  onChunk: (text: string) => void
+  onChunk: (text: string) => void,
+  customSystemPrompt?: string
 ): Promise<string> {
   const apiKey = getApiKey()
   if (!apiKey) {
@@ -46,11 +47,13 @@ export async function sendMessageToClaude(
     apiKey: apiKey,
   })
 
+  const systemPrompt = customSystemPrompt || SYSTEM_PROMPT
+
   try {
     const stream = await client.messages.stream({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: messages.map((msg) => ({
         role: msg.role,
         content: msg.content,

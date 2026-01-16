@@ -78,7 +78,7 @@ export default function Home() {
           >
             <div className="text-center">
               <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-                View Research Database
+                Research Database
               </h3>
               <p className="text-gray-600 mb-4">
                 Browse your sandwich research data organized by chapters

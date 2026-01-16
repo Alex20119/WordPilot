@@ -6,6 +6,8 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
+  hasSubscription: boolean
+  subscriptionLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signInWithGoogle: () => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
@@ -17,6 +19,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasSubscription, setHasSubscription] = useState(false)
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true)
+
+  const checkSubscription = async (userId: string) => {
+    setSubscriptionLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('active')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error checking subscription:', error)
+        setHasSubscription(false)
+      } else {
+        setHasSubscription(data?.active || false)
+      }
+    } catch (err) {
+      console.error('Subscription check exception:', err)
+      setHasSubscription(false)
+    } finally {
+      setSubscriptionLoading(false)
+    }
+  }
 
   useEffect(() => {
     // Get initial session
@@ -29,14 +56,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+      
+      // Redirect to landing page on sign out
+      if (event === 'SIGNED_OUT') {
+        window.location.href = '/'
+      }
+      
+      // Check subscription when user changes
+      if (session?.user) {
+        checkSubscription(session.user.id)
+      } else {
+        setHasSubscription(false)
+        setSubscriptionLoading(false)
+      }
     })
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Check subscription when user is set
+  useEffect(() => {
+    if (user) {
+      checkSubscription(user.id)
+    } else {
+      setHasSubscription(false)
+      setSubscriptionLoading(false)
+    }
+  }, [user])
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -50,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `${window.location.origin}/projects`,
       },
     })
     return { error }
@@ -64,6 +114,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     loading,
+    hasSubscription,
+    subscriptionLoading,
     signIn,
     signInWithGoogle,
     signOut,

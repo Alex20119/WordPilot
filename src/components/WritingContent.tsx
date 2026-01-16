@@ -150,37 +150,71 @@ export default function WritingContent({ embedded = false }: WritingContentProps
   }
 
   const handleDeleteSection = async (sectionId: string) => {
-    if (!confirm('Are you sure you want to delete this section?')) return
+    const section = sections.find((s) => s.id === sectionId)
+    if (!section) return
+
+    const subsections = sections.filter((s) => s.parent_id === sectionId)
+    const hasSubsections = subsections.length > 0
+
+    const confirmMessage = hasSubsections
+      ? `Are you sure you want to delete "${section.title}" and all its ${subsections.length} subsection(s)? This action cannot be undone.`
+      : `Are you sure you want to delete "${section.title}"? This action cannot be undone.`
+
+    if (!confirm(confirmMessage)) return
+
     try {
+      // Delete all subsections first
+      for (const subsection of subsections) {
+        await deleteBookSection(subsection.id)
+      }
+      // Then delete the main section
       await deleteBookSection(sectionId)
-      setSections((prev) => prev.filter((s) => s.id !== sectionId))
+
+      // Remove from state
+      const idsToRemove = new Set([sectionId, ...subsections.map((s) => s.id)])
+      setSections((prev) => prev.filter((s) => !idsToRemove.has(s.id)))
       setExpandedSections((prev) => {
         const newSet = new Set(prev)
-        newSet.delete(sectionId)
+        idsToRemove.forEach((id) => newSet.delete(id))
         return newSet
       })
       setMenuOpen(null)
     } catch (error) {
       console.error('Error deleting section:', error)
+      alert('Failed to delete section. Please try again.')
     }
   }
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return
+    if (result.source.index === result.destination.index) return
 
-    const items = Array.from(sections)
+    // Only reorder top-level sections (no parent_id)
+    const topLevelSectionsList = sections
+      .filter((s) => !s.parent_id)
+      .sort((a, b) => a.order_number - b.order_number)
+
+    const items = Array.from(topLevelSectionsList)
     const [reorderedItem] = items.splice(result.source.index, 1)
     items.splice(result.destination.index, 0, reorderedItem)
 
-    const updatedItems = items.map((item, index) => ({
+    // Update order numbers for top-level sections only
+    const updatedTopLevel = items.map((item, index) => ({
       ...item,
       order_number: index,
     }))
 
-    setSections(updatedItems)
+    // Keep subsections unchanged, only update top-level sections
+    const updatedSections = sections.map((section) => {
+      const updated = updatedTopLevel.find((s) => s.id === section.id)
+      return updated || section
+    })
+
+    setSections(updatedSections)
 
     try {
-      for (const item of updatedItems) {
+      // Only update order numbers for top-level sections that changed
+      for (const item of updatedTopLevel) {
         await updateBookSection(item.id, { order_number: item.order_number })
       }
     } catch (error) {
@@ -243,19 +277,26 @@ export default function WritingContent({ embedded = false }: WritingContentProps
               )}
               <span className="text-sm text-gray-500 ml-4">{section.word_count} words</span>
             </div>
-            <div className="relative ml-4">
+            <div className="relative ml-4 section-menu-container">
               <button
-                onClick={() => setMenuOpen(isMenuOpen ? null : section.id)}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenuOpen(isMenuOpen ? null : section.id)
+                }}
+                className="section-menu-button p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                 </svg>
               </button>
               {isMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                <div 
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation()
                       setEditingTitle(section.id)
                       setEditingTitleValue(section.title)
                       setMenuOpen(null)
@@ -265,8 +306,11 @@ export default function WritingContent({ embedded = false }: WritingContentProps
                     Edit title
                   </button>
                   <button
-                    onClick={() => handleDeleteSection(section.id)}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteSection(section.id)
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     Delete
                   </button>
@@ -307,10 +351,18 @@ export default function WritingContent({ embedded = false }: WritingContentProps
     .sort((a, b) => a.order_number - b.order_number)
 
   useEffect(() => {
-    const handleClickOutside = () => setMenuOpen(null)
-    document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
-  }, [])
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      // Check if click is outside the menu
+      if (!target.closest('.section-menu-container') && !target.closest('.section-menu-button')) {
+        setMenuOpen(null)
+      }
+    }
+    if (menuOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [menuOpen])
 
   return (
     <div className={embedded ? 'h-full bg-gray-50' : 'min-h-screen bg-gray-50'}>

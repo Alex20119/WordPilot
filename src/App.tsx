@@ -1,7 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProjectProvider } from './contexts/ProjectContext'
-import Login from './components/Login'
+import Landing from './pages/Landing'
+import SignIn from './pages/SignIn'
+import SignUp from './pages/SignUp'
+import Subscribe from './pages/Subscribe'
 import ProtectedRoute from './components/ProtectedRoute'
 import ProjectsList from './pages/ProjectsList'
 import Home from './pages/Home'
@@ -16,15 +19,20 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/subscribe" element={<Subscribe />} />
           <Route
-            path="/"
+            path="/projects"
             element={
               <ProtectedRoute>
                 <ProjectsList />
               </ProtectedRoute>
             }
           />
+          {/* Legacy route redirect */}
+          <Route path="/login" element={<Navigate to="/signin" replace />} />
           <Route
             path="/project/:projectId"
             element={
