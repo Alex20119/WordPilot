@@ -60,12 +60,33 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white shadow-sm">
+        <div className="w-full">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="text-2xl font-bold text-primary-600 pl-4 sm:pl-6 lg:pl-8">
+              Word Pilot
+            </Link>
+            <nav className="flex items-center gap-4 pr-4 sm:pr-6 lg:pr-8">
+              <Link
+                to="/subscribe"
+                className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 transition-colors"
+              >
+                Subscribe
+              </Link>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-md w-full space-y-8">
         <div>
-          <h1 className="text-center text-4xl font-bold text-primary-600">Word Pilot</h1>
+          <h1 className="text-center text-3xl font-bold text-gray-900">Sign in to your account</h1>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
+            Enter your credentials to continue
           </p>
         </div>
         
@@ -182,7 +203,8 @@ export default function SignIn() {
             Don't have an account? Sign up
           </Link>
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

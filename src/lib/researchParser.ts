@@ -1,3 +1,83 @@
+export interface Source {
+  number: number
+  citation: string
+  type: 'book' | 'website' | 'article' | 'other'
+  url: string | null
+}
+
+/**
+ * Extract URL from citation text
+ */
+function extractUrl(text: string): string | null {
+  const urlMatch = text.match(/(https?:\/\/[^\s\)]+)/i)
+  return urlMatch ? urlMatch[1] : null
+}
+
+/**
+ * Detect source type from citation text
+ */
+function detectSourceType(citation: string): 'book' | 'website' | 'article' | 'other' {
+  const lower = citation.toLowerCase()
+  if (lower.includes('http://') || lower.includes('https://') || lower.includes('www.')) {
+    return 'website'
+  }
+  if (lower.includes('journal') || lower.includes('volume') || lower.includes('issue') || lower.includes('pages')) {
+    return 'article'
+  }
+  if (lower.includes('isbn') || lower.includes('publisher')) {
+    return 'book'
+  }
+  return 'other'
+}
+
+/**
+ * Parse sources section from research output
+ */
+function parseSources(sourcesText: string): Source[] {
+  const sources: Source[] = []
+  
+  // Split by numbered references [1], [2], etc.
+  const sourceMatches = sourcesText.match(/\[(\d+)\][\s\n]+(.+?)(?=\[\d+\]|$)/gs)
+  
+  if (sourceMatches) {
+    sourceMatches.forEach((match) => {
+      const numberMatch = match.match(/\[(\d+)\]/)
+      if (numberMatch) {
+        const number = parseInt(numberMatch[1], 10)
+        const citation = match.replace(/\[\d+\][\s\n]+/, '').trim()
+        const url = extractUrl(citation)
+        const type = detectSourceType(citation)
+        
+        sources.push({
+          number,
+          citation,
+          type,
+          url,
+        })
+      }
+    })
+  } else {
+    // Fallback: try to parse line by line if numbered format not found
+    const lines = sourcesText.split('\n').filter(line => line.trim())
+    lines.forEach((line, index) => {
+      const trimmed = line.trim()
+      if (trimmed) {
+        const url = extractUrl(trimmed)
+        const type = detectSourceType(trimmed)
+        
+        sources.push({
+          number: index + 1,
+          citation: trimmed,
+          type,
+          url,
+        })
+      }
+    })
+  }
+  
+  return sources
+}
+
 /**
  * Parse research output from Claude into structured JSON
  * Expected format:
@@ -6,12 +86,13 @@
  * FIELD_NAME_2:
  * Content for field 2...
  * SOURCES:
- * List of sources...
+ * [1] First source citation...
+ * [2] Second source citation...
  */
-export function parseResearchOutput(content: string): Record<string, string> | null {
+export function parseResearchOutput(content: string): Record<string, any> | null {
   try {
     const lines = content.split('\n')
-    const result: Record<string, string> = {}
+    const result: Record<string, any> = {}
     let currentField: string | null = null
     let currentContent: string[] = []
 
@@ -22,7 +103,15 @@ export function parseResearchOutput(content: string): Record<string, string> | n
       if (fieldMatch) {
         // Save previous field if exists
         if (currentField) {
-          result[currentField.toLowerCase()] = currentContent.join('\n').trim()
+          const fieldName = currentField.toLowerCase()
+          const fieldContent = currentContent.join('\n').trim()
+          
+          // Special handling for SOURCES field
+          if (fieldName === 'sources') {
+            result.sources = parseSources(fieldContent)
+          } else {
+            result[fieldName] = fieldContent
+          }
         }
         
         // Start new field
@@ -36,7 +125,15 @@ export function parseResearchOutput(content: string): Record<string, string> | n
 
     // Save last field
     if (currentField) {
-      result[currentField] = currentContent.join('\n').trim()
+      const fieldName = currentField.toLowerCase()
+      const fieldContent = currentContent.join('\n').trim()
+      
+      // Special handling for SOURCES field
+      if (fieldName === 'sources') {
+        result.sources = parseSources(fieldContent)
+      } else {
+        result[fieldName] = fieldContent
+      }
     }
 
     // Return null if no fields were found

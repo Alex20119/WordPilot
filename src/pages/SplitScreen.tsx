@@ -19,9 +19,9 @@ export default function SplitScreen() {
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <nav className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0 h-16">
-        <div className="px-4 sm:px-6 lg:px-8 h-full">
+        <div className="w-full h-full">
           <div className="flex justify-between items-center h-full">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 pl-4 sm:pl-6 lg:pl-8">
               <Link to="/" className="text-xl font-bold text-gray-900 hover:text-gray-700">
                 Word Pilot
               </Link>
@@ -36,7 +36,7 @@ export default function SplitScreen() {
               </Link>
               <span className="text-sm text-gray-500">Split-Screen Mode</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 pr-4 sm:pr-6 lg:pr-8">
               <Link
                 to="/settings"
                 className="text-sm text-gray-600 hover:text-gray-900"
@@ -58,7 +58,7 @@ export default function SplitScreen() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Research Database */}
         <div className="w-1/2 border-r border-gray-200 bg-gray-50 overflow-y-auto scrollbar-hide px-4 py-4">
-          <ResearchDatabaseContent embedded={true} />
+          <ResearchDatabaseContent embedded={true} enableTextSelection={true} />
         </div>
 
         {/* Right Panel - Writing */}

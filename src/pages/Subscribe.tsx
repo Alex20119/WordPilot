@@ -9,12 +9,23 @@ export default function Subscribe() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full">
           <div className="flex justify-between items-center h-16">
-            <Link to="/" className="text-2xl font-bold text-primary-600">
-              Word Pilot
-            </Link>
-            <nav className="flex items-center gap-4">
+            <div className="flex items-center gap-4 pl-4 sm:pl-6 lg:pl-8">
+              <Link to="/" className="text-2xl font-bold text-primary-600">
+                Word Pilot
+              </Link>
+              <Link
+                to="/"
+                className="text-gray-600 hover:text-gray-900 flex items-center gap-2 text-sm font-medium"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Back to landing</span>
+              </Link>
+            </div>
+            <nav className="flex items-center gap-4 pr-4 sm:pr-6 lg:pr-8">
               {user ? (
                 <>
                   <Link

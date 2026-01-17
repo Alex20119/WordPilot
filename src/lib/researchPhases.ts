@@ -78,7 +78,24 @@ CONVERSATION APPROACH:
 
 Start by understanding what stage they're at: Do they have a clear topic or are they still developing their idea?`
 
-const PHASE_2_GENERIC_PROMPT = `Help user conduct thorough research on their book topic, including identifying key themes, gathering sources, and organizing research items.`
+const PHASE_2_GENERIC_PROMPT = `Help user conduct thorough research on their book topic, including identifying key themes, gathering sources, and organizing research items.
+
+When researching, you MUST provide complete source citations. For each source used:
+
+BOOKS:
+Author (Year). Title. Publisher. ISBN (if available).
+Example: Smith, John (2015). History of Topics. Academic Press. ISBN: 1234567890
+
+WEBSITES:
+"Article Title" - Website Name. URL (Accessed: Date)
+Example: "Topic Overview" - Encyclopedia Site. https://example.com/article (Accessed: 2026-01-16)
+
+JOURNAL ARTICLES:
+Author (Year). "Article Title". Journal Name, Volume(Issue), Pages.
+Example: Johnson, Mary (2018). "Research Findings". Academic Journal, 12(3), 45-67.
+
+Output a SOURCES section at the end with numbered references [1], [2], [3], etc.
+Each source must include complete bibliographic information.`
 
 const PHASE_3_GENERIC_PROMPT = `Review research for accuracy, verify sources, check for gaps, and resolve contradictions.`
 

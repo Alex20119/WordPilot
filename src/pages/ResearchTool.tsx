@@ -301,7 +301,11 @@ Start by understanding what stage they're at: Do they have a clear topic or are 
 FIELD_NAME:
 Content for this field...
 
-Make sure to include all relevant information, sources, and context.`
+SOURCES:
+[1] First source citation with complete bibliographic details...
+[2] Second source citation with complete bibliographic details...
+
+Make sure to include all relevant information, sources with complete citations, and context.`
 
     setIsTyping(true)
 
@@ -409,7 +413,11 @@ Make sure to include all relevant information, sources, and context.`
 FIELD_NAME:
 Content for this field...
 
-Make sure to include all relevant information, sources, and context.`
+SOURCES:
+[1] First source citation with complete bibliographic details...
+[2] Second source citation with complete bibliographic details...
+
+Make sure to include all relevant information, sources with complete citations, and context.`
 
       const apiMessages: APIChatMessage[] = [
         {

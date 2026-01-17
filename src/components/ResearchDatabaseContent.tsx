@@ -7,9 +7,10 @@ import { loadResearchItems, subscribeToResearchItems, ResearchItem } from '@/lib
 
 interface ResearchDatabaseContentProps {
   embedded?: boolean
+  enableTextSelection?: boolean
 }
 
-export default function ResearchDatabaseContent({ embedded = false }: ResearchDatabaseContentProps) {
+export default function ResearchDatabaseContent({ embedded = false, enableTextSelection = false }: ResearchDatabaseContentProps) {
   const { user } = useAuth()
   const { project, loading } = useProject()
   const { projectId } = useParams<{ projectId: string }>()
@@ -140,7 +141,7 @@ export default function ResearchDatabaseContent({ embedded = false }: ResearchDa
     user?.email === 'ahh201190@gmail.com'
 
   if (shouldShowSandwichData) {
-    return <SandwichResearchDB embedded={embedded} />
+    return <SandwichResearchDB embedded={embedded} enableTextSelection={enableTextSelection} />
   }
 
   // Empty state for all other projects with full top box
@@ -287,16 +288,50 @@ export default function ResearchDatabaseContent({ embedded = false }: ResearchDa
                               {isExpanded && (
                                 <div className="mt-3 ml-6 space-y-3">
                                   {hasData ? (
-                                    Object.entries(item.data || {}).map(([field, content]) => (
-                                      <div key={field} className="border-l-2 border-primary-200 pl-3">
-                                        <strong className="text-sm font-semibold text-gray-700 block mb-1">
-                                          {field.replace(/_/g, ' ').toUpperCase()}
-                                        </strong>
-                                        <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                                          {String(content)}
-                                        </p>
-                                      </div>
-                                    ))
+                                    <>
+                                      {/* Display regular fields (excluding sources) */}
+                                      {Object.entries(item.data || {})
+                                        .filter(([field]) => field !== 'sources')
+                                        .map(([field, content]) => (
+                                          <div key={field} className="border-l-2 border-primary-200 pl-3">
+                                            <strong className="text-sm font-semibold text-gray-700 block mb-1">
+                                              {field.replace(/_/g, ' ').toUpperCase()}
+                                            </strong>
+                                            <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                                              {String(content)}
+                                            </p>
+                                          </div>
+                                        ))}
+                                      
+                                      {/* Display sources separately */}
+                                      {item.data?.sources && Array.isArray(item.data.sources) && item.data.sources.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-gray-300">
+                                          <strong className="text-sm font-semibold text-gray-700 block mb-2">
+                                            SOURCES:
+                                          </strong>
+                                          <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
+                                            {item.data.sources.map((source: any) => (
+                                              <li key={source.number || source.citation} className="ml-2">
+                                                <span className="whitespace-pre-wrap">{source.citation || source}</span>
+                                                {source.url && (
+                                                  <span className="ml-2">
+                                                    <a
+                                                      href={source.url}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-primary-600 hover:text-primary-800 underline"
+                                                      onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                      [Link]
+                                                    </a>
+                                                  </span>
+                                                )}
+                                              </li>
+                                            ))}
+                                          </ol>
+                                        </div>
+                                      )}
+                                    </>
                                   ) : (
                                     <p className="text-sm text-gray-500 italic">
                                       Not researched yet

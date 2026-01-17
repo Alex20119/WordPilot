@@ -9,9 +9,10 @@ import AIPreviewModal from '@/components/AIPreviewModal';
 
 interface SandwichResearchDBProps {
   embedded?: boolean;
+  enableTextSelection?: boolean;
 }
 
-const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
+const SandwichResearchDB = ({ embedded = false, enableTextSelection = false }: SandwichResearchDBProps) => {
   const { user } = useAuth();
   const { projectId } = useParams<{ projectId: string }>();
   const [sandwiches, setSandwiches] = useState<any[]>([]);
@@ -746,6 +747,8 @@ const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
   };
 
   const handleTextSelection = () => {
+    if (!enableTextSelection) return;
+    
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) {
       setShowToolbar(false);
@@ -777,13 +780,16 @@ const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
   };
 
   useEffect(() => {
+    if (!enableTextSelection) return;
+    
     document.addEventListener('mouseup', handleTextSelection);
     document.addEventListener('keyup', handleTextSelection);
     return () => {
       document.removeEventListener('mouseup', handleTextSelection);
       document.removeEventListener('keyup', handleTextSelection);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enableTextSelection]);
 
   const handleAddWithAI = async (sectionId: string) => {
     if (!selectedText.trim()) return;
@@ -1022,18 +1028,18 @@ const SandwichResearchDB = ({ embedded = false }: SandwichResearchDBProps) => {
         ))}
       </div>
 
-      {showToolbar && (
-        <TextSelectionToolbar
-          selectedText={selectedText}
-          onAddWithAI={handleAddWithAI}
-          sections={bookSections}
-          onClose={() => {
-            setShowToolbar(false);
-            setSelectedText('');
-          }}
-          position={toolbarPosition}
-        />
-      )}
+        {enableTextSelection && showToolbar && (
+          <TextSelectionToolbar
+            selectedText={selectedText}
+            onAddWithAI={handleAddWithAI}
+            sections={bookSections}
+            onClose={() => {
+              setShowToolbar(false);
+              setSelectedText('');
+            }}
+            position={toolbarPosition}
+          />
+        )}
 
       {showPreviewModal && previewSectionId && (
         <AIPreviewModal
