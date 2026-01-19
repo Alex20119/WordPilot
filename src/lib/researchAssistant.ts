@@ -45,6 +45,7 @@ export async function sendMessageToClaude(
 
   const client = new Anthropic({
     apiKey: apiKey,
+    dangerouslyAllowBrowser: true,
   })
 
   const systemPrompt = customSystemPrompt || SYSTEM_PROMPT
@@ -76,8 +77,8 @@ export async function sendMessageToClaude(
     if (error?.status === 429) {
       throw new Error('Too many requests. Please wait a moment and try again.')
     }
-    if (error?.status === 401) {
-      throw new Error('Invalid API key. Please check your API key in Settings.')
+    if (error?.status === 401 || error?.message?.includes('invalid x-api-key') || error?.message?.includes('authentication_error')) {
+      throw new Error('Invalid API key. Please check that your API key is correct and starts with "sk-ant-". Update it in Settings.')
     }
     if (error?.message) {
       throw new Error(`Failed to connect to Claude: ${error.message}`)
@@ -97,6 +98,7 @@ export async function sendMessageToClaudeComplete(messages: ChatMessage[]): Prom
 
   const client = new Anthropic({
     apiKey: apiKey,
+    dangerouslyAllowBrowser: true,
   })
 
   try {
@@ -121,8 +123,8 @@ export async function sendMessageToClaudeComplete(messages: ChatMessage[]): Prom
     if (error?.status === 429) {
       throw new Error('Too many requests. Please wait a moment and try again.')
     }
-    if (error?.status === 401) {
-      throw new Error('Invalid API key. Please check your API key in Settings.')
+    if (error?.status === 401 || error?.message?.includes('invalid x-api-key') || error?.message?.includes('authentication_error')) {
+      throw new Error('Invalid API key. Please check that your API key is correct and starts with "sk-ant-". Update it in Settings.')
     }
     if (error?.message) {
       throw new Error(`Failed to connect to Claude: ${error.message}`)

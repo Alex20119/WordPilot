@@ -19,6 +19,7 @@ export async function addResearchWithAI(
 
   const client = new Anthropic({
     apiKey: apiKey,
+    dangerouslyAllowBrowser: true,
   })
 
   const prompt = `You are helping integrate research facts into a book draft. 
@@ -42,7 +43,7 @@ Return ONLY the complete, integrated text (including the original content plus t
 
   try {
     const response = await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [
         {

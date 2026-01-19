@@ -43,10 +43,11 @@ export default function Settings() {
     try {
       const client = new Anthropic({
         apiKey: apiKey.trim(),
+        dangerouslyAllowBrowser: true,
       })
 
       const response = await client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 10,
         messages: [
           {
@@ -62,7 +63,15 @@ export default function Settings() {
       }
     } catch (error: any) {
       setTestStatus('error')
-      setTestMessage(error?.message || 'Connection failed. Please check your API key.')
+      let errorMessage = 'Connection failed. Please check your API key.'
+      
+      if (error?.status === 401 || error?.message?.includes('invalid x-api-key') || error?.message?.includes('authentication_error')) {
+        errorMessage = 'Invalid API key. Please check that your API key is correct and starts with "sk-ant-". You can get a new key from console.anthropic.com'
+      } else if (error?.message) {
+        errorMessage = error.message
+      }
+      
+      setTestMessage(errorMessage)
     }
   }
 
