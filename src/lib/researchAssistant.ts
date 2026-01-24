@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { hasActiveSubscription, trackTokenUsage } from './subscriptions'
+import { supabase } from './supabase'
 
 const ANTHROPIC_API_KEY_STORAGE_KEY = 'anthropic_api_key'
 
@@ -43,6 +45,17 @@ export async function sendMessageToClaude(
     throw new Error('Anthropic API key not found. Please add your Anthropic API key in Settings to use the research assistant.')
   }
 
+  // Check subscription status
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    throw new Error('You must be signed in to use AI features.')
+  }
+
+  const hasSubscription = await hasActiveSubscription(user.id)
+  if (!hasSubscription) {
+    throw new Error('You need an active subscription to use AI features. Please subscribe to continue.')
+  }
+
   const client = new Anthropic({
     apiKey: apiKey,
     dangerouslyAllowBrowser: true,
@@ -71,6 +84,24 @@ export async function sendMessageToClaude(
       }
     }
 
+    // Get final message with usage information
+    const finalMessage = await stream.finalMessage()
+    
+    // Track token usage
+    if (finalMessage.usage) {
+      const totalTokens = finalMessage.usage.input_tokens + finalMessage.usage.output_tokens
+      try {
+        await trackTokenUsage(user.id, totalTokens)
+      } catch (tokenError: any) {
+        // If token tracking fails, still return the content but log the error
+        console.error('Failed to track token usage:', tokenError)
+        // Re-throw if it's a limit exceeded error
+        if (tokenError.message?.includes('Token limit exceeded')) {
+          throw tokenError
+        }
+      }
+    }
+
     return fullResponse
   } catch (error: any) {
     // Handle specific error types
@@ -96,6 +127,17 @@ export async function sendMessageToClaudeComplete(messages: ChatMessage[]): Prom
     throw new Error('Anthropic API key not found. Please add your Anthropic API key in Settings to use the research assistant.')
   }
 
+  // Check subscription status
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    throw new Error('You must be signed in to use AI features.')
+  }
+
+  const hasSubscription = await hasActiveSubscription(user.id)
+  if (!hasSubscription) {
+    throw new Error('You need an active subscription to use AI features. Please subscribe to continue.')
+  }
+
   const client = new Anthropic({
     apiKey: apiKey,
     dangerouslyAllowBrowser: true,
@@ -111,6 +153,21 @@ export async function sendMessageToClaudeComplete(messages: ChatMessage[]): Prom
         content: msg.content,
       })),
     })
+
+    // Track token usage
+    if (response.usage) {
+      const totalTokens = response.usage.input_tokens + response.usage.output_tokens
+      try {
+        await trackTokenUsage(user.id, totalTokens)
+      } catch (tokenError: any) {
+        // If token tracking fails, still return the content but log the error
+        console.error('Failed to track token usage:', tokenError)
+        // Re-throw if it's a limit exceeded error
+        if (tokenError.message?.includes('Token limit exceeded')) {
+          throw tokenError
+        }
+      }
+    }
 
     const content = response.content[0]
     if (content.type === 'text') {
@@ -130,5 +187,82 @@ export async function sendMessageToClaudeComplete(messages: ChatMessage[]): Prom
       throw new Error(`Failed to connect to Claude: ${error.message}`)
     }
     throw new Error('Failed to connect to Claude. Please check your API key and try again.')
+  }
+}
+
+export interface MessageToSummarize {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
+
+/**
+ * Summarize a slice of conversation for rolling summarization.
+ * Returns a single assistant message with [Previous conversation summary: ...].
+ */
+export async function summarizeMessages(
+  messagesToSummarize: MessageToSummarize[]
+): Promise<{ role: 'assistant'; content: string }> {
+  const apiKey = getApiKey()
+  if (!apiKey) {
+    throw new Error('Anthropic API key not found. Please add your Anthropic API key in Settings.')
+  }
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    throw new Error('You must be signed in to use AI features.')
+  }
+
+  const hasSubscription = await hasActiveSubscription(user.id)
+  if (!hasSubscription) {
+    throw new Error('You need an active subscription to use AI features.')
+  }
+
+  const client = new Anthropic({
+    apiKey,
+    dangerouslyAllowBrowser: true,
+  })
+
+  const conversationText = messagesToSummarize
+    .map((m) => `${m.role}: ${m.content}`)
+    .join('\n\n')
+
+  const userPrompt = `Summarize this conversation concisely in 2-3 sentences:
+
+${conversationText}
+
+Focus on: what was discussed, what actions were taken, and what research was completed.`
+
+  try {
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+
+    if (response.usage) {
+      const totalTokens = response.usage.input_tokens + response.usage.output_tokens
+      try {
+        await trackTokenUsage(user.id, totalTokens)
+      } catch (tokenError: any) {
+        console.error('Failed to track token usage:', tokenError)
+        if (tokenError.message?.includes('Token limit exceeded')) throw tokenError
+      }
+    }
+
+    const block = response.content[0]
+    const summary = block?.type === 'text' ? block.text : ''
+    return {
+      role: 'assistant',
+      content: `[Previous conversation summary: ${summary}]`,
+    }
+  } catch (error: any) {
+    if (error?.status === 429) {
+      throw new Error('Too many requests. Please wait a moment and try again.')
+    }
+    if (error?.status === 401 || error?.message?.includes('invalid x-api-key') || error?.message?.includes('authentication_error')) {
+      throw new Error('Invalid API key. Please check your API key in Settings.')
+    }
+    throw new Error(`Failed to summarize conversation: ${error?.message || 'Unknown error'}`)
   }
 }

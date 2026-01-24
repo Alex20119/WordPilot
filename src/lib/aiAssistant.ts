@@ -1,6 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { getBookSectionById, updateBookSection } from './bookSections'
 import { calculateWordCount } from './bookSections'
+import { hasActiveSubscription, trackTokenUsage } from './subscriptions'
+import { supabase } from './supabase'
 
 const ANTHROPIC_API_KEY_STORAGE_KEY = 'anthropic_api_key'
 
@@ -11,6 +13,17 @@ export async function addResearchWithAI(
   const apiKey = localStorage.getItem(ANTHROPIC_API_KEY_STORAGE_KEY)
   if (!apiKey) {
     throw new Error('Anthropic API key not found. Please set it in Settings.')
+  }
+
+  // Check subscription status
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    throw new Error('You must be signed in to use AI features.')
+  }
+
+  const hasSubscription = await hasActiveSubscription(user.id)
+  if (!hasSubscription) {
+    throw new Error('You need an active subscription to use AI features. Please subscribe to continue.')
   }
 
   // Get current section content
@@ -52,6 +65,21 @@ Return ONLY the complete, integrated text (including the original content plus t
         },
       ],
     })
+
+    // Track token usage
+    if (response.usage) {
+      const totalTokens = response.usage.input_tokens + response.usage.output_tokens
+      try {
+        await trackTokenUsage(user.id, totalTokens)
+      } catch (tokenError: any) {
+        // If token tracking fails, still return the content but log the error
+        console.error('Failed to track token usage:', tokenError)
+        // Re-throw if it's a limit exceeded error
+        if (tokenError.message?.includes('Token limit exceeded')) {
+          throw tokenError
+        }
+      }
+    }
 
     const content = response.content[0]
     if (content.type === 'text') {

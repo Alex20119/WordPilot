@@ -1,9 +1,57 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 export default function Subscribe() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubscribe = async () => {
+    if (!user) {
+      navigate('/signin')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      
+      if (!authUser || !authUser.email) {
+        throw new Error('User not authenticated')
+      }
+
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: authUser.id,
+          userEmail: authUser.email,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create checkout session')
+      }
+
+      const { sessionUrl } = await response.json()
+      
+      if (sessionUrl) {
+        window.location.href = sessionUrl
+      } else {
+        throw new Error('No session URL returned')
+      }
+    } catch (err: any) {
+      console.error('Error creating checkout session:', err)
+      setError(err.message || 'Failed to start checkout. Please try again.')
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -70,32 +118,45 @@ export default function Subscribe() {
         <div className="max-w-2xl w-full text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-6">Subscribe to Word Pilot</h1>
           <p className="text-lg text-gray-600 mb-8">
-            Subscription system coming soon
+            Get unlimited access to all features and AI-powered research tools
           </p>
           <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Pricing</h2>
-              <p className="text-gray-600">Pricing information will be available soon.</p>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Premium Subscription</h2>
+              <p className="text-gray-600 mb-4">
+                Access to all AI features, research tools, and unlimited projects
+              </p>
+              <div className="text-3xl font-bold text-primary-600 mb-2">$29/month</div>
+              <p className="text-sm text-gray-500">Billed monthly</p>
             </div>
-            <div className="mt-8">
-              <button
-                disabled
-                className="px-6 py-3 bg-gray-300 text-gray-500 rounded-lg text-lg font-medium cursor-not-allowed"
-              >
-                Referral Code
-              </button>
-              <p className="text-sm text-gray-500 mt-2">Referral code feature coming soon</p>
-            </div>
-          </div>
-          <div>
-            {!user && (
-              <Link
-                to="/signup"
-                className="inline-block bg-primary-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-primary-700 transition-colors"
-              >
-                Get Started
-              </Link>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 text-red-800 rounded-md text-sm">
+                {error}
+              </div>
             )}
+
+            <div className="mt-8">
+              {user ? (
+                <button
+                  onClick={handleSubscribe}
+                  disabled={loading}
+                  className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg text-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Processing...' : 'Subscribe Now'}
+                </button>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-gray-600">Please sign in to subscribe</p>
+                  <Link
+                    to="/signin"
+                    className="inline-block w-full px-6 py-3 bg-primary-600 text-white rounded-lg text-lg font-medium hover:bg-primary-700 transition-colors"
+                  >
+                    Sign In to Subscribe
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>

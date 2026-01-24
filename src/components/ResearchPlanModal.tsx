@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { getPhasePromptFromTemplate, type PromptTemplatesMap } from '@/lib/promptTemplates'
 
 interface ResearchSessionData {
   currentPhase: number
@@ -17,17 +18,14 @@ interface ResearchSessionData {
   phases: {
     phase1: {
       status: 'complete' | 'in_progress' | 'not_started'
-      stockPrompt: string
       completedAt?: string
     }
     phase2: {
       status: 'complete' | 'in_progress' | 'not_started'
-      generatedPrompt?: string
       summary: string
     }
     phase3: {
       status: 'complete' | 'in_progress' | 'not_started'
-      generatedPrompt?: string
       summary: string
     }
   }
@@ -52,80 +50,22 @@ interface ResearchPlanModalProps {
   isOpen: boolean
   onClose: () => void
   projectId: string
-  refreshTrigger?: number // Increment this to force refresh
+  refreshTrigger?: number
+  templates?: PromptTemplatesMap
+  selectedTemplateId?: string
 }
 
-const PHASE_1_STOCK_PROMPT = `You are helping an author plan a research-intensive non-fiction book. Phase 1 covers all planning activities before research begins.
-
-YOUR ROLE IN PHASE 1:
-
-IDEA DEVELOPMENT (if needed)
-- If user has vague idea, help them develop it
-- Brainstorm potential book topics within their area of interest
-- Explain why each topic could work as a book
-
-TOPIC EXPLORATION
-- Once user has a topic, explore it conversationally
-- Ask: What specific angle or focus?
-- Ask: What makes this unique or interesting?
-- Help refine broad ideas into specific book concepts
-
-FIND SIMILAR WORKS
-- Identify books that cover similar territory
-- Explain how their book could differ or fill gaps
-- Note what's been done vs. what's missing in existing literature
-
-DEFINE BOOK PARAMETERS
-- Target audience (general readers, students, academics, practitioners)
-- Research depth needed (overview, thorough, academic-level)
-- Scope and length (essay-length, standard book, comprehensive)
-- Tone and approach (narrative, analytical, instructional, etc.)
-
-CREATE RESEARCH PLAN
-- Suggest logical structure for organizing research
-- Identify major topics/themes to research
-- List specific items that need research
-- Define what information to collect (research fields)
-
-GENERATE PHASE 2 INSTRUCTIONS
-- Create customized research prompt for Phase 2
-- Tailor it to this specific book's needs
-
-When the user is ready to proceed to research, output JSON:
-{
-  "bookPlan": {
-    "topic": "clear topic statement",
-    "angle": "specific focus",
-    "audience": "target readers",
-    "depth": "research depth needed",
-    "scope": "book length/scope"
-  },
-  "similarWorks": [
-    {"title": "Book Title", "author": "Author", "howItsDifferent": "explanation"}
-  ],
-  "researchPlan": {
-    "sections": [
-      {
-        "title": "Section title",
-        "description": "What this covers",
-        "itemsToResearch": ["item1", "item2", "item3"]
-      }
-    ],
-    "researchFields": ["field1", "field2", "field3"]
-  },
-  "phase2Prompt": "Detailed instructions for Phase 2 research, customized for this book..."
-}
-
-CONVERSATION APPROACH:
-- Be exploratory and helpful
-- Ask clarifying questions
-- Make suggestions but let user guide
-- Don't rush - take time to develop a solid plan
-- Only output JSON when user confirms they're ready for Phase 2
-
-Start by understanding what stage they're at: Do they have a clear topic or are they still developing their idea?`
-
-export default function ResearchPlanModal({ isOpen, onClose, projectId, refreshTrigger }: ResearchPlanModalProps) {
+export default function ResearchPlanModal({
+  isOpen,
+  onClose,
+  projectId,
+  refreshTrigger,
+  templates = {},
+  selectedTemplateId = 'default',
+}: ResearchPlanModalProps) {
+  const phase1Prompt = getPhasePromptFromTemplate(1, templates, selectedTemplateId)
+  const phase2Prompt = getPhasePromptFromTemplate(2, templates, selectedTemplateId)
+  const phase3Prompt = getPhasePromptFromTemplate(3, templates, selectedTemplateId)
   const [sessionData, setSessionData] = useState<ResearchSessionData | null>(null)
   const [expandedPhases, setExpandedPhases] = useState<Set<number>>(new Set([1]))
 
@@ -148,10 +88,7 @@ export default function ResearchPlanModal({ isOpen, onClose, projectId, refreshT
       const defaultData: ResearchSessionData = {
         currentPhase: 1,
         phases: {
-          phase1: {
-            status: 'not_started',
-            stockPrompt: PHASE_1_STOCK_PROMPT,
-          },
+          phase1: { status: 'not_started' },
           phase2: {
             status: 'not_started',
             summary: 'Conduct thorough research on the book topic',
@@ -310,9 +247,9 @@ export default function ResearchPlanModal({ isOpen, onClose, projectId, refreshT
               {expandedPhases.has(1) && (
                 <div className="p-4 bg-white border-t border-gray-200">
                   <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Stock Prompt:</h4>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Phase 1 Prompt:</h4>
                     <div className="bg-gray-50 rounded p-3 text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                      {PHASE_1_STOCK_PROMPT}
+                      {phase1Prompt}
                     </div>
                   </div>
                   {(bookPlan?.topic || decisions?.bookTopic) && (
@@ -356,14 +293,10 @@ export default function ResearchPlanModal({ isOpen, onClose, projectId, refreshT
               </button>
               {expandedPhases.has(2) && (
                 <div className="p-4 bg-white border-t border-gray-200">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Full Prompt:</h4>
-                  {phases?.phase2.generatedPrompt ? (
-                    <div className="bg-gray-50 rounded p-3 text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                      {phases.phase2.generatedPrompt}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500 italic">Waiting for Phase 1 to complete...</p>
-                  )}
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Phase 2 Prompt:</h4>
+                  <div className="bg-gray-50 rounded p-3 text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                    {phase2Prompt}
+                  </div>
                 </div>
               )}
             </div>
@@ -393,14 +326,10 @@ export default function ResearchPlanModal({ isOpen, onClose, projectId, refreshT
               </button>
               {expandedPhases.has(3) && (
                 <div className="p-4 bg-white border-t border-gray-200">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Full Prompt:</h4>
-                  {phases?.phase3.generatedPrompt ? (
-                    <div className="bg-gray-50 rounded p-3 text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                      {phases.phase3.generatedPrompt}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500 italic">Waiting for Phase 1 to complete...</p>
-                  )}
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Phase 3 Prompt:</h4>
+                  <div className="bg-gray-50 rounded p-3 text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                    {phase3Prompt}
+                  </div>
                 </div>
               )}
             </div>
